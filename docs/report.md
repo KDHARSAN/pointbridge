@@ -36,7 +36,7 @@ The diagrams are in `architecture.md`: the component diagram, three sequence dia
 | Event Bus | Fan-out of loyalty events to every subscribed application | none | Socket.IO |
 | Café monolith | Menu, cart, orders, receipts | `cafe.db` | Express, SQLite, HTML/JS |
 | Cinema monolith | Movies, shows, seat inventory, bookings | `cinema.db` | Express, SQLite, HTML/JS |
-| `loyalty-client` | Shared client library: the REST client, the event-feed relay, and the browser member widget | none | Node.js + browser JS |
+| `loyalty-client` | Shared client library: the REST client, the shared checkout flow (`settlePurchase`: spend, then earn, with safe retries), the event-feed relay, and the browser member widget | none | Node.js + browser JS |
 
 ### 3.2 Service contract
 
@@ -93,14 +93,14 @@ The diagrams are in `architecture.md`: the component diagram, three sequence dia
 
 | Suite | Tests | What it proves |
 |---|---|---|
-| Loyalty Service: core | 15 | Enroll/lookup, the earn rate, spending, refusing an overdraft, the race between two apps, idempotent retries, refusing a reference reused for another member, every validation rule, API-key auth, tiers, the admin overview never leaking keys |
+| Loyalty Service: core | 17 | Enroll/lookup, length and amount limits, malformed JSON, the earn rate, spending, refusing an overdraft, the race between two apps, idempotent retries, refusing a reference reused for another member, every validation rule, API-key auth, tiers, the admin overview never leaking keys |
 | Loyalty Service: events | 4 | The right events with the source app and member snapshot; nothing published on replays or refusals; a dead bus doesn't fail writes |
 | Event Bus | 2 | Fan-out to several subscribers; rejects bad events |
 | `loyalty-client` | 4 | Round-trip against the **real** service; errors mapped to `LoyaltyError`; `findOrEnroll`; unreachable service |
-| Café monolith | 16 | Checkout with and without points, a unique reference per order, a retried spend after a timeout, a whole bill paid in points, a refused spend saves nothing, validation happens before any service call, guest checkout, service down, earn failing after a spend |
-| Cinema monolith | 9 | Booking maths, a retried spend after a timeout, seat inventory, oversell refused without touching points, seats released when a spend fails, validation, service down |
+| Café monolith | 18 | Checkout with and without points, a retried earn after a timeout, malformed JSON, a unique reference per order, a retried spend after a timeout, a whole bill paid in points, a refused spend saves nothing, validation happens before any service call, guest checkout, service down, earn failing after a spend |
+| Cinema monolith | 10 | Booking maths, malformed JSON, a retried spend after a timeout, seat inventory, oversell refused without touching points, seats released when a spend fails, validation, service down |
 
-Run all 50 tests with `npm test` in `pointbridge/`. The full demo was also run in the browser with both monoliths and the service console open.
+Run all 55 tests with `npm test` in `pointbridge/`. The full demo was also run in the browser with both monoliths and the service console open.
 
 ## 7. SOA vs microservices, and REST vs SOAP
 

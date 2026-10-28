@@ -145,7 +145,7 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 0 5px; border-radius: 
 /* Table */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; font-weight: 500; font-size: 12px; color: var(--faint); padding: 10px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 td { padding: 10px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; color: var(--text-2); }
 tr:last-child td { border-bottom: 0; }
 tbody tr { transition: background .15s; }
@@ -186,7 +186,7 @@ td[colspan] { font-family: inherit; font-size: 13px; padding: 20px 16px; }
 .pb-feed li.pb-partner { border-left: 0; box-shadow: inset 2px 0 0 var(--accent); }
 .pb-feed li.empty { color: var(--muted); }
 .pb-feed b { color: var(--text); font-weight: 500; }
-.pb-feed small { margin-left: auto; font-family: var(--mono); color: var(--faint); }
+.pb-feed small { margin-left: auto; font-family: var(--mono); color: var(--muted); }
 .pb-src { font-family: var(--mono); font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; background: transparent; border: 1px solid var(--line-strong); color: var(--muted); }
 
 /* Entrance: fade up out of a light blur, staggered */

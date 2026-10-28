@@ -57,11 +57,14 @@
     async function lookup() {
       message('');
       if (phone.length !== 10) return show(null);
-      const res = await fetch(`/api/member/${phone}`).catch(() => null);
+      const asked = phone;
+      const res = await fetch(`/api/member/${asked}`).catch(() => null);
+      if (asked !== phone) return; // the cashier changed the number while this was loading
       if (!res) return message(`Can't reach the ${APPS[app]} server.`);
       if (res.status === 404) { show(null); return message('Not a member yet — add a name and they join on checkout.'); }
       if (!res.ok) { show(null); return message('Loyalty service offline — orders still go through, without points.'); }
-      show(await res.json());
+      const found = await res.json();
+      if (asked === phone) show(found);
     }
 
     $('.pb-phone').addEventListener('input', (e) => {
@@ -81,7 +84,9 @@
         if (evt.connected) lookup(); // catch up on anything missed while disconnected
         return;
       }
-      if (evt.phone === phone && evt.member) show(evt.member, { flash: evt.source !== app });
+      // Events can arrive out of order; never replace a newer snapshot with an older one.
+      const newer = !member || evt.member?.updatedAt >= member.updatedAt;
+      if (evt.phone === phone && evt.member && newer) show(evt.member, { flash: evt.source !== app });
       if (!feedEl) return;
       feed.unshift(evt);
       feed.length = Math.min(feed.length, 15);

@@ -20,6 +20,35 @@ export async function retryOnce(call) {
   }
 }
 
+// The loyalty half of a partner's checkout, shared by every partner app.
+// Spends points if asked (never more than the balance or the bill), then earns on what was paid.
+// Throws LoyaltyError if the spend is refused or can't be confirmed: the caller must undo its own sale.
+// An earn that still fails after a retry doesn't throw; the sale stands with loyaltyStatus 'failed'.
+export async function settlePurchase(loyalty, { phone, member, total, usePoints, reference }) {
+  let pointsUsed = 0;
+  const wanted = usePoints && member ? Math.min(member.balance, total) : 0;
+  if (wanted > 0) {
+    const spent = await retryOnce(() => loyalty.redeem(phone, wanted, reference));
+    ({ member } = spent);
+    pointsUsed = spent.points;
+  }
+
+  const paid = total - pointsUsed;
+  let pointsEarned = 0;
+  let loyaltyStatus = member ? 'ok' : 'failed';
+  if (member && paid > 0) {
+    try {
+      const earned = await retryOnce(() => loyalty.earn(phone, paid, reference));
+      ({ member } = earned);
+      pointsEarned = earned.points;
+    } catch (err) {
+      if (!(err instanceof LoyaltyError)) throw err;
+      loyaltyStatus = 'failed';
+    }
+  }
+  return { member, pointsUsed, paid, pointsEarned, loyaltyStatus };
+}
+
 export function createLoyaltyClient({ baseUrl, clientId, apiKey, timeoutMs = 3000 }) {
   async function call(method, path, body) {
     let res;

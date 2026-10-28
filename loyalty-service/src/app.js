@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { enroll, getMember, applyPoints, listTransactions, listMembers, recentLedger } from './repo.js';
 
 export const RUPEES_PER_POINT_EARNED = 10;
+const MAX_NAME = 60;
+const MAX_PURCHASE_RUPEES = 100000; // one purchase; anything bigger is a client bug, not a sale
 
 const isPhone = (v) => typeof v === 'string' && /^\d{10}$/.test(v);
 const isText = (v) => typeof v === 'string' && v.trim() !== '';
@@ -47,6 +49,7 @@ export function createApp({ db, clients, publish = () => {} }) {
     const { phone, name } = req.body;
     if (!isPhone(phone)) return res.status(400).json({ error: 'phone must be 10 digits' });
     if (!isText(name)) return res.status(400).json({ error: 'name is required' });
+    if (name.trim().length > MAX_NAME) return res.status(400).json({ error: `name must be at most ${MAX_NAME} characters` });
     const { member, created } = enroll(db, { phone, name });
     if (created) emit('MemberEnrolled', req, member);
     res.status(created ? 201 : 200).json(member);
@@ -74,8 +77,8 @@ export function createApp({ db, clients, publish = () => {} }) {
 
   app.post('/members/:phone/earn', (req, res) => {
     const { amount } = req.body;
-    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
-      return res.status(400).json({ error: 'amount must be a positive number of rupees' });
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0 || amount > MAX_PURCHASE_RUPEES) {
+      return res.status(400).json({ error: `amount must be a positive number of rupees, at most ${MAX_PURCHASE_RUPEES}` });
     }
     change(req, res, 'earn', Math.floor(amount / RUPEES_PER_POINT_EARNED));
   });
@@ -83,6 +86,14 @@ export function createApp({ db, clients, publish = () => {} }) {
   app.post('/members/:phone/redeem', (req, res) => {
     if (!isPositiveInt(req.body.points)) return res.status(400).json({ error: 'points must be a positive whole number' });
     change(req, res, 'redeem', req.body.points);
+  });
+
+  // Keep the contract JSON even on failure, and never send stack traces to clients.
+  app.use((err, req, res, next) => {
+    const status = err.status ?? err.statusCode ?? 500;
+    if (status >= 500) console.error(err);
+    const message = err.type === 'entity.parse.failed' ? 'Request body must be valid JSON' : err.message;
+    res.status(status).json({ error: status < 500 ? message : 'Internal error' });
   });
 
   return app;

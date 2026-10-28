@@ -127,3 +127,10 @@ test('redeem timeout: retried once with the same reference, booking kept', async
   assert.equal(res.status, 201);
   assert.deepEqual([res.body.booking.pointsUsed, refs[0] === refs[1], seatsLeft(1)], [40, true, 38]);
 });
+
+test('malformed JSON -> 400 JSON error', async () => {
+  const { app } = setup();
+  const res = await request(app).post('/api/bookings').set('Content-Type', 'application/json').send('{"showId": ');
+  assert.equal(res.status, 400);
+  assert.match(res.type, /json/);
+});

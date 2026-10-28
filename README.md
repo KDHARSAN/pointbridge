@@ -88,4 +88,4 @@ Every call needs the headers `X-Client-Id` (`cafe` or `cinema`) and `X-Api-Key`.
 | GET | `/members/:phone/transactions` | | the ledger, newest first |
 | GET | `/health`, `/admin/overview`, `/` | | open, read-only |
 
-Rules: a member becomes **Gold** at 500 lifetime points. A repeated `(client, type, reference)` is applied only once, so retries are safe. Events published: `MemberEnrolled`, `PointsEarned`, `PointsRedeemed`.
+Rules: a member becomes **Gold** at 500 lifetime points. Names are at most 60 characters, and one purchase is at most ₹1,00,000. A repeated `(client, type, reference)` is applied only once, so retries are safe. Events published: `MemberEnrolled`, `PointsEarned`, `PointsRedeemed`.

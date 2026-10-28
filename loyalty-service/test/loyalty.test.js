@@ -164,3 +164,23 @@ test('a reference already used for another member -> 409, neither balance change
   assert.equal((await cafe.get('/members/9000000001')).body.balance, 0);
   assert.equal((await cafe.get(`/members/${PHONE}`)).body.balance, 25);
 });
+
+test('malformed JSON -> 400 JSON error, no HTML stack trace', async () => {
+  const { app } = setup();
+  const res = await request(app).post('/members').set('X-Client-Id', 'cafe').set('X-Api-Key', CLIENTS.cafe)
+    .set('Content-Type', 'application/json').send('{"phone": ');
+  assert.equal(res.status, 400);
+  assert.match(res.type, /json/);
+  assert.ok(res.body.error);
+});
+
+test('name over 60 characters and earn amount over ₹1,00,000 -> 400', async () => {
+  const { cafe } = await enrolled();
+  const name = await cafe.post('/members', { phone: '9000000002', name: 'x'.repeat(61) });
+  assert.equal(name.status, 400);
+  assert.match(name.body.error, /name/);
+  const amount = await cafe.post(`/members/${PHONE}/earn`, { amount: 100001, reference: 'big' });
+  assert.equal(amount.status, 400);
+  assert.match(amount.body.error, /amount/);
+  assert.equal((await cafe.post(`/members/${PHONE}/earn`, { amount: 100000, reference: 'max' })).body.points, 10000);
+});

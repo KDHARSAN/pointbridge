@@ -1,6 +1,6 @@
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { LoyaltyError, retryOnce } from '../../loyalty-client/index.js';
+import { LoyaltyError, settlePurchase } from '../../loyalty-client/index.js';
 
 const isPhone = (v) => typeof v === 'string' && /^\d{10}$/.test(v);
 const toOrder = (row) => ({ ...row, items: JSON.parse(row.items) });
@@ -12,6 +12,14 @@ function sendLoyaltyError(res, err) {
   if (!(err instanceof LoyaltyError)) throw err;
   if (err.status === 0) return res.status(503).json({ error: err.message });
   res.status(err.status).json({ error: err.message });
+}
+
+// Keep API errors JSON (malformed bodies included) and never send stack traces to the browser.
+function jsonErrors(err, req, res, next) {
+  const status = err.status ?? err.statusCode ?? 500;
+  if (status >= 500) console.error(err);
+  const message = err.type === 'entity.parse.failed' ? 'Request body must be valid JSON' : err.message;
+  res.status(status).json({ error: status < 500 ? message : 'Something went wrong' });
 }
 
 // loyalty: a client from loyalty-client (the shared Loyalty Points Service), injected so tests can stub it.
@@ -79,38 +87,20 @@ export function createApp({ db, loyalty, live }) {
     const id = save({ phone, loyaltyStatus: 'pending' });
     const reference = `cafe-order-${id}-${randomUUID()}`;
 
-    let pointsUsed = 0;
-    const wanted = usePoints && member ? Math.min(member.balance, total) : 0;
-    if (wanted > 0) {
-      try {
-        const spent = await retryOnce(() => loyalty.redeem(phone, wanted, reference));
-        ({ member } = spent);
-        pointsUsed = spent.points;
-      } catch (err) {
-        db.prepare('DELETE FROM orders WHERE id = ?').run(id); // nothing was spent, so drop the order
-        return sendLoyaltyError(res, err);
-      }
-    }
-
-    // 4. Earn on what was actually paid. If this fails the sale stands and is flagged.
-    const paid = total - pointsUsed;
-    let pointsEarned = 0;
-    let loyaltyStatus = member ? 'ok' : 'failed';
-    if (member && paid > 0) {
-      try {
-        const earned = await loyalty.earn(phone, paid, reference);
-        ({ member } = earned);
-        pointsEarned = earned.points;
-      } catch (err) {
-        if (!(err instanceof LoyaltyError)) throw err;
-        loyaltyStatus = 'failed';
-      }
+    // 4. Spend and earn points through the shared checkout flow.
+    let settled;
+    try {
+      settled = await settlePurchase(loyalty, { phone, member, total, usePoints, reference });
+    } catch (err) {
+      db.prepare('DELETE FROM orders WHERE id = ?').run(id); // the spend didn't go through, so drop the order
+      return sendLoyaltyError(res, err);
     }
 
     db.prepare('UPDATE orders SET pointsUsed = ?, paid = ?, pointsEarned = ?, loyaltyStatus = ? WHERE id = ?')
-      .run(pointsUsed, paid, pointsEarned, loyaltyStatus, id);
-    res.status(201).json({ order: load(id), member });
+      .run(settled.pointsUsed, settled.paid, settled.pointsEarned, settled.loyaltyStatus, id);
+    res.status(201).json({ order: load(id), member: settled.member });
   }));
 
+  app.use(jsonErrors);
   return app;
 }

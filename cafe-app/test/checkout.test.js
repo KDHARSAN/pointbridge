@@ -190,3 +190,23 @@ test('pointsUsed records what the service actually spent', async () => {
   const res = await request(app).post('/api/checkout').send(order({ usePoints: true }));
   assert.deepEqual([res.body.order.pointsUsed, res.body.order.paid], [10, 320]);
 });
+
+test('earn timeout: retried once with the same reference, order shows points applied', async () => {
+  const { app, loyalty } = setup();
+  const realEarn = loyalty.earn;
+  const refs = [];
+  loyalty.earn = async (phone, amount, ref) => {
+    refs.push(ref);
+    if (refs.length === 1) throw new LoyaltyError(0, 'Loyalty service unavailable');
+    return realEarn(phone, amount, ref);
+  };
+  const res = await request(app).post('/api/checkout').send(order());
+  assert.deepEqual([res.body.order.loyaltyStatus, res.body.order.pointsEarned, refs[0] === refs[1]], ['ok', 33, true]);
+});
+
+test('malformed JSON -> 400 JSON error', async () => {
+  const { app } = setup();
+  const res = await request(app).post('/api/checkout').set('Content-Type', 'application/json').send('{"items": [');
+  assert.equal(res.status, 400);
+  assert.match(res.type, /json/);
+});
