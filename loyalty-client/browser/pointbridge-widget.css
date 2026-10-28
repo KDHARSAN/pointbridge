@@ -1,0 +1,30 @@
+/* PointBridge widget. Host apps theme it through --pb-accent / --pb-surface / --pb-text / --pb-muted / --pb-line. */
+.pb [hidden] { display: none !important; }
+.pb { display: grid; gap: 10px; padding: 14px; border-radius: 14px; background: var(--pb-surface, #fff); border: 1px solid var(--pb-line, #e5e5e5); color: var(--pb-text, #222); }
+.pb-head { display: flex; justify-content: space-between; align-items: center; }
+.pb-logo { font-weight: 800; letter-spacing: .3px; color: var(--pb-accent, #6d28d9); }
+.pb-live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--pb-muted, #777); }
+.pb-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+.pb-dot.on { background: #22c55e; box-shadow: 0 0 0 3px #22c55e33; }
+.pb-field { display: grid; gap: 4px; font-size: 12px; color: var(--pb-muted, #777); }
+.pb-field input { font: inherit; font-size: 15px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--pb-line, #ddd); background: transparent; color: var(--pb-text, #222); }
+.pb-field input:focus-visible { outline: 2px solid var(--pb-accent, #6d28d9); outline-offset: 1px; }
+.pb-card { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 12px; background: linear-gradient(135deg, var(--pb-accent, #6d28d9), color-mix(in srgb, var(--pb-accent, #6d28d9) 55%, #000)); color: #fff; }
+.pb-name { font-weight: 700; font-size: 16px; }
+.pb-tier { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #ffffff33; }
+.pb-tier.gold { background: #facc15; color: #422006; }
+.pb-balance-wrap { text-align: right; }
+.pb-balance { font-size: 30px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.pb-unit { font-size: 11px; opacity: .8; }
+.pb-use { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.pb-msg { font-size: 12px; color: var(--pb-muted, #777); min-height: 1em; }
+.pb-flash { animation: pb-flash 1.4s ease; }
+@keyframes pb-flash { 0% { box-shadow: 0 0 0 6px #facc15; transform: scale(1.03); } 100% { box-shadow: 0 0 0 0 transparent; transform: none; } }
+
+.pb-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pb-feed li { padding: 8px 10px; border-radius: 8px; font-size: 13px; background: color-mix(in srgb, var(--pb-accent, #6d28d9) 8%, transparent); animation: pb-in .3s ease; }
+.pb-feed li.pb-partner { border-left: 3px solid var(--pb-accent, #6d28d9); }
+.pb-feed small { display: block; color: var(--pb-muted, #777); font-size: 11px; }
+.pb-src { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 1px 6px; border-radius: 4px; background: var(--pb-line, #eee); margin-right: 4px; }
+@keyframes pb-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pb-flash, .pb-feed li { animation: none; } }

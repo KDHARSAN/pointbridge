@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brew &amp; Bean Café</title>
+  <link rel="stylesheet" href="/pointbridge-widget.css" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">☕</div>
+      <div><h1>Brew &amp; Bean Café</h1><p>Counter POS · Café monolith on :3001</p></div>
+    </div>
+    <span class="partner">◆ PointBridge partner</span>
+  </header>
+
+  <main class="layout">
+    <section>
+      <h2>Menu</h2>
+      <div id="menu" class="menu"></div>
+      <h2>Recent orders</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Items</th><th>Total</th><th>Points used</th><th>Paid</th><th>Earned</th><th>Loyalty</th></tr></thead>
+          <tbody id="orders"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <h2>Current order</h2>
+        <ul id="cart" class="cart"></ul>
+        <div class="total"><span>Total</span><strong id="total">₹0</strong></div>
+      </section>
+      <div id="pointbridge"></div>
+      <button id="place" class="primary" disabled>Place order</button>
+      <div id="banner" class="banner" role="alert" hidden></div>
+      <section id="receipt" class="panel receipt" hidden></section>
+      <section class="panel">
+        <h2>Partner network activity</h2>
+        <ul id="feed" class="pb-feed"><li>Waiting for activity from PointBridge partners…</li></ul>
+      </section>
+    </aside>
+  </main>
+
+  <script src="/pointbridge-widget.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
