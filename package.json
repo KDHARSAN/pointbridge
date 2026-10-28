@@ -4,7 +4,8 @@
   "scripts": {
     "setup": "npm install && npm install --prefix loyalty-service && npm install --prefix event-bus && npm install --prefix loyalty-client && npm install --prefix cafe-app && npm install --prefix cinema-app",
     "dev": "concurrently --restart-tries 5 --restart-after 1000 -n loyalty,bus,cafe,cinema -c magenta,yellow,red,cyan \"node --no-warnings loyalty-service/src/server.js\" \"node event-bus/src/server.js\" \"node --no-warnings cafe-app/src/server.js\" \"node --no-warnings cinema-app/src/server.js\"",
-    "test": "npm test --prefix loyalty-service && npm test --prefix event-bus && npm test --prefix loyalty-client && npm test --prefix cafe-app && npm test --prefix cinema-app"
+    "test": "npm test --prefix loyalty-service && npm test --prefix event-bus && npm test --prefix loyalty-client && npm test --prefix cafe-app && npm test --prefix cinema-app",
+    "race": "node scripts/race.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.5"

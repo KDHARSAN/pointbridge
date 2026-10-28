@@ -139,3 +139,14 @@ test('tier becomes Gold at 500 lifetime points and stays after redeeming', async
   assert.equal(after.body.member.tier, 'Gold');
   assert.equal(after.body.member.lifetimeEarned, 500);
 });
+
+test('GET /admin/overview needs no key and lists members and latest ledger rows from every client', async () => {
+  const { app, cinema } = await enrolled(30);
+  await cinema.post(`/members/${PHONE}/redeem`, { points: 5, reference: 'b-1' });
+  const res = await request(app).get('/admin/overview');
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body.members.map((m) => [m.phone, m.balance, m.tier]), [[PHONE, 25, 'Silver']]);
+  assert.deepEqual(res.body.ledger.map((l) => [l.source, l.type, l.points]), [['cinema', 'redeem', 5], ['cafe', 'earn', 30]]);
+  assert.ok(res.body.clients.includes('cafe') && res.body.clients.includes('cinema'));
+  assert.equal(JSON.stringify(res.body).includes('cafe-key'), false); // never leak API keys
+});

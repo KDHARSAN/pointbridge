@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import express from 'express';
-import { enroll, getMember, applyPoints, listTransactions } from './repo.js';
+import { fileURLToPath } from 'node:url';
+import { enroll, getMember, applyPoints, listTransactions, listMembers, recentLedger } from './repo.js';
 
 export const RUPEES_PER_POINT_EARNED = 10;
 
@@ -14,6 +15,13 @@ export function createApp({ db, clients, publish = () => {} }) {
   app.use(express.json());
 
   app.get('/health', (req, res) => res.json({ ok: true }));
+
+  // Read-only operator dashboard, open without a key.
+  // shortcut: unauthenticated admin view for the local demo; put it behind staff login before any real deployment.
+  app.use(express.static(fileURLToPath(new URL('../public', import.meta.url))));
+  app.get('/admin/overview', (req, res) => {
+    res.json({ clients: Object.keys(clients), members: listMembers(db), ledger: recentLedger(db) });
+  });
 
   app.use((req, res, next) => {
     const id = req.get('X-Client-Id');

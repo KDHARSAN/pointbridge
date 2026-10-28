@@ -46,6 +46,15 @@ export function applyPoints(db, { phone, type, points, source, reference }) {
   }
 }
 
+export function listMembers(db) {
+  return db.prepare('SELECT * FROM members ORDER BY updatedAt DESC').all().map((r) => toMember(plain(r)));
+}
+
+export function recentLedger(db, limit = 30) {
+  return db.prepare(`SELECT l.*, m.name FROM ledger l JOIN members m ON m.phone = l.phone
+    ORDER BY l.id DESC LIMIT ?`).all(limit).map(plain);
+}
+
 export function listTransactions(db, phone, limit = 50) {
   return db.prepare('SELECT * FROM ledger WHERE phone = ? ORDER BY id DESC LIMIT ?').all(phone, limit).map(plain);
 }

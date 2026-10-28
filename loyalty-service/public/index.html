@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PointBridge Service Console</title>
+  <style>
+    :root { --bg: #0f1020; --surface: #181a30; --line: #2a2d4a; --text: #eceefe; --muted: #9a9cc0; --accent: #a78bfa; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; }
+    header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 18px 24px; border-bottom: 1px solid var(--line); }
+    h1 { margin: 0; font-size: 20px; } h1 span { color: var(--accent); }
+    header p { margin: 0; color: var(--muted); font-size: 12px; }
+    .clients { display: flex; gap: 8px; flex-wrap: wrap; }
+    .client { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); }
+    main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 40px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 20px; }
+    @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+    section { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; overflow-x: auto; }
+    h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th { color: var(--muted); font-weight: 500; font-size: 12px; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .chip { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+    .earn { background: #14532d; color: #bbf7d0; } .redeem { background: #4c0519; color: #fecdd3; }
+    .cafe { background: #78350f; color: #fde68a; } .cinema { background: #4a044e; color: #f5d0fe; }
+    .gold { background: #facc15; color: #422006; } .silver { background: #334155; color: #e2e8f0; }
+    tr.new { animation: hl 1.5s ease; }
+    @keyframes hl { from { background: #a78bfa44; } to { background: transparent; } }
+    @media (prefers-reduced-motion: reduce) { tr.new { animation: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div><h1>◆ PointBridge <span>Loyalty Points Service</span></h1><p>Service console · :5001 · the only owner of members, balances and the ledger</p></div>
+    <div class="clients" id="clients" aria-label="Registered client applications"></div>
+  </header>
+  <main>
+    <section>
+      <h2>Members</h2>
+      <table><thead><tr><th>Phone</th><th>Name</th><th>Tier</th><th class="num">Balance</th><th class="num">Lifetime</th></tr></thead><tbody id="members"></tbody></table>
+    </section>
+    <section>
+      <h2>Ledger · latest 30 (which app did what)</h2>
+      <table><thead><tr><th>#</th><th>Time</th><th>App</th><th>Member</th><th>Type</th><th class="num">Points</th><th>Reference</th></tr></thead><tbody id="ledger"></tbody></table>
+    </section>
+  </main>
+  <script src="http://localhost:5002/socket.io/socket.io.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let lastId = 0;
+
+    async function load() {
+      const { clients, members, ledger } = await (await fetch('/admin/overview')).json();
+      $('clients').innerHTML = clients.map((c) => `<span class="client">client: ${esc(c)}</span>`).join('');
+      $('members').innerHTML = members.map((m) => `<tr><td>${esc(m.phone)}</td><td>${esc(m.name)}</td>
+        <td><span class="chip ${m.tier.toLowerCase()}">${m.tier}</span></td><td class="num">${m.balance}</td><td class="num">${m.lifetimeEarned}</td></tr>`).join('')
+        || '<tr><td colspan="5">No members yet</td></tr>';
+      $('ledger').innerHTML = ledger.map((l) => `<tr class="${l.id > lastId && lastId ? 'new' : ''}"><td>${l.id}</td>
+        <td>${new Date(l.createdAt).toLocaleTimeString()}</td><td><span class="chip ${esc(l.source)}">${esc(l.source)}</span></td>
+        <td>${esc(l.name)}</td><td><span class="chip ${l.type}">${l.type}</span></td><td class="num">${l.points}</td><td>${esc(l.reference)}</td></tr>`).join('')
+        || '<tr><td colspan="7">No transactions yet</td></tr>';
+      lastId = ledger[0]?.id ?? lastId;
+    }
+
+    load();
+    // Live via the Event Bus when it's up; plain polling otherwise.
+    if (typeof io !== 'undefined') io('http://localhost:5002').on('event', load);
+    else setInterval(load, 3000);
+  </script>
+</body>
+</html>
