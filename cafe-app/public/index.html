@@ -3,48 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Brew &amp; Bean Café</title>
+  <title>Brew &amp; Bean</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" />
   <link rel="stylesheet" href="/pointbridge-widget.css" />
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <div class="logo" aria-hidden="true">☕</div>
-      <div><h1>Brew &amp; Bean Café</h1><p>Counter POS · Café monolith on :3001</p></div>
-    </div>
-    <span class="partner">◆ PointBridge partner</span>
+  <header class="nav">
+    <a class="wordmark" href="/">brew&amp;bean</a>
+    <nav class="links" aria-label="Sections">
+      <a href="#menu-section">Menu</a>
+      <a href="#orders-section">Orders</a>
+      <a href="#network">Rewards</a>
+    </nav>
+    <a class="pill pill-sm" href="#menu-section">Order now</a>
   </header>
 
-  <main class="layout">
-    <section>
-      <h2>Menu</h2>
-      <div id="menu" class="menu"></div>
-      <h2>Recent orders</h2>
-      <div class="table-wrap">
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>Coffee that <em>pays you back.</em></h1>
+        <p>Every cup earns PointBridge points you can spend here, at the cinema, and anywhere else in the network. Instantly, no paperwork.</p>
+        <a class="pill" href="#menu-section">Start an order</a>
+      </div>
+      <svg class="hero-art" viewBox="0 0 240 220" aria-hidden="true">
+        <g class="steam" fill="none" stroke="#ff0083" stroke-width="2.5" stroke-linecap="round">
+          <path d="M96 52c-8-12 8-18 0-30" /><path d="M120 46c-8-12 8-18 0-30" /><path d="M144 52c-8-12 8-18 0-30" />
+        </g>
+        <g class="cup" fill="none" stroke="#4a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M62 78h116l-10 92a18 18 0 0 1-18 16H90a18 18 0 0 1-18-16z" fill="#fff" />
+          <path d="M175 98h14a18 18 0 0 1 0 36h-18" />
+          <path d="M66 112h108" stroke="#ff0083" />
+          <path d="M40 196h160" />
+        </g>
+      </svg>
+    </section>
+
+    <section class="chat" aria-live="polite">
+      <div class="avatar" aria-hidden="true">B</div>
+      <div class="bubble" id="bubble"><span class="typing"><i></i><i></i><i></i></span></div>
+    </section>
+
+    <div class="order-layout">
+      <section id="menu-section">
+        <h2 class="section-title">Menu</h2>
+        <div id="menu" class="menu"></div>
+      </section>
+
+      <aside class="side" aria-label="Your order">
+        <section class="card">
+          <h2 class="card-title">Your order</h2>
+          <ul id="cart" class="cart"></ul>
+          <div class="total"><span>Total</span><strong id="total">₹0</strong></div>
+        </section>
+        <div id="pointbridge"></div>
+        <button id="place" class="pill pill-block" disabled>Place order</button>
+        <div id="banner" class="banner" role="alert" hidden></div>
+        <section id="receipt" class="card receipt" hidden></section>
+      </aside>
+    </div>
+
+    <section id="orders-section" class="band">
+      <h2 class="section-title">Recent orders</h2>
+      <div class="card table-wrap">
         <table>
-          <thead><tr><th>#</th><th>Items</th><th>Total</th><th>Points used</th><th>Paid</th><th>Earned</th><th>Loyalty</th></tr></thead>
+          <thead><tr><th>Order</th><th>Items</th><th class="num">Total</th><th class="num">Points used</th><th class="num">Paid</th><th class="num">Earned</th><th>Loyalty</th></tr></thead>
           <tbody id="orders"></tbody>
         </table>
       </div>
     </section>
 
-    <aside class="side">
-      <section class="panel">
-        <h2>Current order</h2>
-        <ul id="cart" class="cart"></ul>
-        <div class="total"><span>Total</span><strong id="total">₹0</strong></div>
-      </section>
-      <div id="pointbridge"></div>
-      <button id="place" class="primary" disabled>Place order</button>
-      <div id="banner" class="banner" role="alert" hidden></div>
-      <section id="receipt" class="panel receipt" hidden></section>
-      <section class="panel">
-        <h2>Partner network activity</h2>
-        <ul id="feed" class="pb-feed"><li>Waiting for activity from PointBridge partners…</li></ul>
-      </section>
-    </aside>
+    <section id="network" class="band">
+      <h2 class="section-title">Happening across PointBridge</h2>
+      <ul id="feed" class="pb-feed"><li class="empty">Nothing yet. Activity from the café and partner apps shows up here live.</li></ul>
+    </section>
   </main>
+
+  <footer class="foot">Brew &amp; Bean · Café monolith on :3001 · a PointBridge partner</footer>
 
   <script src="/pointbridge-widget.js"></script>
   <script src="/app.js"></script>
