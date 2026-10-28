@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Starlight Cinemas</title>
+  <link rel="stylesheet" href="/pointbridge-widget.css" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">🎬</div>
+      <div><h1>Starlight Cinemas</h1><p>Box office · Cinema monolith on :3002</p></div>
+    </div>
+    <span class="partner">◆ PointBridge partner</span>
+  </header>
+
+  <main class="layout">
+    <section>
+      <h2>Now showing</h2>
+      <div id="movies" class="movies"></div>
+      <h2>Recent bookings</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Movie</th><th>Show</th><th>Seats</th><th>Total</th><th>Points used</th><th>Paid</th><th>Earned</th><th>Loyalty</th></tr></thead>
+          <tbody id="bookings"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <h2>Your booking</h2>
+        <div id="selection" class="muted">Pick a show time from the list.</div>
+        <label class="seats">Seats
+          <span class="qty"><button id="less" aria-label="One seat fewer">−</button><output id="seats">2</output><button id="more" aria-label="One seat more">+</button></span>
+        </label>
+        <div class="total"><span>Total</span><strong id="total">₹0</strong></div>
+      </section>
+      <div id="pointbridge"></div>
+      <button id="book" class="primary" disabled>Book tickets</button>
+      <div id="banner" class="banner" role="alert" hidden></div>
+      <section id="receipt" class="panel receipt" hidden></section>
+      <section class="panel">
+        <h2>Partner network activity</h2>
+        <ul id="feed" class="pb-feed"><li>Waiting for activity from PointBridge partners…</li></ul>
+      </section>
+    </aside>
+  </main>
+
+  <script src="/pointbridge-widget.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
