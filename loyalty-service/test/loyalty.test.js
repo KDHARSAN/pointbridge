@@ -150,3 +150,17 @@ test('GET /admin/overview needs no key and lists members and latest ledger rows 
   assert.ok(res.body.clients.includes('cafe') && res.body.clients.includes('cinema'));
   assert.equal(JSON.stringify(res.body).includes('cafe-key'), false); // never leak API keys
 });
+
+test('a reference already used for another member -> 409, neither balance changes', async () => {
+  const { cafe } = await enrolled(20);
+  await cafe.post('/members', { phone: '9000000001', name: 'Arun' });
+  await cafe.post(`/members/${PHONE}/earn`, { amount: 100, reference: 'shared-ref' });
+  const earn = await cafe.post('/members/9000000001/earn', { amount: 500, reference: 'shared-ref' });
+  assert.equal(earn.status, 409);
+  assert.match(earn.body.error, /reference/);
+  await cafe.post(`/members/${PHONE}/redeem`, { points: 5, reference: 'shared-spend' });
+  const redeem = await cafe.post('/members/9000000001/redeem', { points: 1, reference: 'shared-spend' });
+  assert.equal(redeem.status, 409);
+  assert.equal((await cafe.get('/members/9000000001')).body.balance, 0);
+  assert.equal((await cafe.get(`/members/${PHONE}`)).body.balance, 25);
+});

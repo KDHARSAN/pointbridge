@@ -20,10 +20,12 @@ export function enroll(db, { phone, name }) {
 export function applyPoints(db, { phone, type, points, source, reference }) {
   db.exec('BEGIN');
   try {
-    const prior = db.prepare('SELECT points FROM ledger WHERE source = ? AND type = ? AND reference = ?')
+    const prior = db.prepare('SELECT phone, points FROM ledger WHERE source = ? AND type = ? AND reference = ?')
       .get(source, type, reference);
     if (prior) {
       db.exec('COMMIT');
+      // A reference belongs to one member; reusing it for someone else is a client bug, not a retry.
+      if (prior.phone !== phone) return { conflict: true };
       return { member: getMember(db, phone), points: prior.points, replayed: true };
     }
     const now = new Date().toISOString();

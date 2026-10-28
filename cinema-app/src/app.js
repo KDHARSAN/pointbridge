@@ -1,5 +1,6 @@
 import express from 'express';
-import { LoyaltyError } from '../../loyalty-client/index.js';
+import { randomUUID } from 'node:crypto';
+import { LoyaltyError, retryOnce } from '../../loyalty-client/index.js';
 
 const isPhone = (v) => typeof v === 'string' && /^\d{10}$/.test(v);
 const MAX_SEATS = 10;
@@ -97,14 +98,15 @@ export function createApp({ db, loyalty, live }) {
     const id = reserve({ phone, show, seats, total });
     if (!id) return res.status(409).json({ error: 'Not enough seats' });
     if (!phone) return res.status(201).json({ booking: load(id), member: null });
-    const reference = `cinema-booking-${id}`;
+    const reference = `cinema-booking-${id}-${randomUUID()}`; // unique even if cinema.db is reset
 
     let pointsUsed = 0;
     const wanted = usePoints && member ? Math.min(member.balance, total) : 0;
     if (wanted > 0) {
       try {
-        ({ member } = await loyalty.redeem(phone, wanted, reference));
-        pointsUsed = wanted;
+        const spent = await retryOnce(() => loyalty.redeem(phone, wanted, reference));
+        ({ member } = spent);
+        pointsUsed = spent.points;
       } catch (err) {
         release(id, show, seats); // nothing was spent, so give the seats back
         return sendLoyaltyError(res, err);

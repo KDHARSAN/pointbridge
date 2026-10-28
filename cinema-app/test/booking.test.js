@@ -59,7 +59,9 @@ test('booking 2 seats at ₹200 -> total 400, earns 40, seats drop by 2', async 
   const b = res.body.booking;
   assert.deepEqual([b.total, b.paid, b.pointsEarned, b.loyaltyStatus], [400, 400, 40, 'ok']);
   assert.equal(seatsLeft(1), 38);
-  assert.deepEqual(loyalty.calls.at(-1), ['earn', 400, `cinema-booking-${b.id}`]);
+  const [op, amount, ref] = loyalty.calls.at(-1);
+  assert.deepEqual([op, amount], ['earn', 400]);
+  assert.match(ref, new RegExp(`^cinema-booking-${b.id}-`));
 });
 
 test('using points spends min(balance,total) and earns on the rest', async () => {
@@ -110,4 +112,18 @@ test('GET /api/bookings includes movie title and show time', async () => {
   await request(app).post('/api/bookings').send(book());
   const [b] = (await request(app).get('/api/bookings')).body;
   assert.ok(b.title && b.startsAt);
+});
+
+test('redeem timeout: retried once with the same reference, booking kept', async () => {
+  const { app, loyalty, seatsLeft } = setup({ balance: 40 });
+  const realRedeem = loyalty.redeem;
+  const refs = [];
+  loyalty.redeem = async (phone, points, ref) => {
+    refs.push(ref);
+    if (refs.length === 1) throw new LoyaltyError(0, 'Loyalty service unavailable');
+    return realRedeem(phone, points, ref);
+  };
+  const res = await request(app).post('/api/bookings').send(book({ usePoints: true }));
+  assert.equal(res.status, 201);
+  assert.deepEqual([res.body.booking.pointsUsed, refs[0] === refs[1], seatsLeft(1)], [40, true, 38]);
 });

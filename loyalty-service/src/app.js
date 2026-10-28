@@ -67,6 +67,7 @@ export function createApp({ db, clients, publish = () => {} }) {
     if (points === 0) return res.json({ member: getMember(db, req.params.phone), points: 0 });
     const result = applyPoints(db, { phone: req.params.phone, type, points, source: req.client, reference: req.body.reference });
     if (result.insufficient) return res.status(409).json({ error: 'Not enough points' });
+    if (result.conflict) return res.status(409).json({ error: 'reference already used for a different member' });
     if (!result.replayed) emit(type === 'earn' ? 'PointsEarned' : 'PointsRedeemed', req, result.member, result.points);
     res.json({ member: result.member, points: result.points });
   };

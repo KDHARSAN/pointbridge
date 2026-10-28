@@ -1,5 +1,6 @@
 import express from 'express';
-import { LoyaltyError } from '../../loyalty-client/index.js';
+import { randomUUID } from 'node:crypto';
+import { LoyaltyError, retryOnce } from '../../loyalty-client/index.js';
 
 const isPhone = (v) => typeof v === 'string' && /^\d{10}$/.test(v);
 const toOrder = (row) => ({ ...row, items: JSON.parse(row.items) });
@@ -45,7 +46,9 @@ export function createApp({ db, loyalty, live }) {
     if (phone !== undefined && phone !== '' && !isPhone(phone)) return res.status(400).json({ error: 'phone must be 10 digits' });
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'add at least one item' });
     const lines = [];
-    for (const { menuId, qty } of items) {
+    for (const line of items) {
+      if (!line || typeof line !== 'object') return res.status(400).json({ error: 'each item needs menuId and qty' });
+      const { menuId, qty } = line;
       const item = menuItem.get(menuId);
       if (!item) return res.status(400).json({ error: `unknown menu item ${menuId}` });
       if (!Number.isInteger(qty) || qty < 1 || qty > 20) return res.status(400).json({ error: 'qty must be 1–20' });
@@ -72,16 +75,17 @@ export function createApp({ db, loyalty, live }) {
       if (usePoints) return res.status(503).json({ error: 'Loyalty service unavailable, so points cannot be used right now' });
     }
 
-    // 3. Save the order to get its id; the id becomes the idempotency reference for the service.
+    // 3. Save the order, then give it an idempotency reference that stays unique even if cafe.db is reset.
     const id = save({ phone, loyaltyStatus: 'pending' });
-    const reference = `cafe-order-${id}`;
+    const reference = `cafe-order-${id}-${randomUUID()}`;
 
     let pointsUsed = 0;
     const wanted = usePoints && member ? Math.min(member.balance, total) : 0;
     if (wanted > 0) {
       try {
-        ({ member } = await loyalty.redeem(phone, wanted, reference));
-        pointsUsed = wanted;
+        const spent = await retryOnce(() => loyalty.redeem(phone, wanted, reference));
+        ({ member } = spent);
+        pointsUsed = spent.points;
       } catch (err) {
         db.prepare('DELETE FROM orders WHERE id = ?').run(id); // nothing was spent, so drop the order
         return sendLoyaltyError(res, err);

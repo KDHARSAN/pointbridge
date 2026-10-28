@@ -8,8 +8,9 @@
   function describe(evt) {
     const who = esc(evt.member?.name ?? evt.phone);
     const where = APPS[evt.source] ?? esc(evt.source);
-    if (evt.type === 'PointsEarned') return `<b>${who}</b> earned <b>${evt.points}</b> pts at ${where}`;
-    if (evt.type === 'PointsRedeemed') return `<b>${who}</b> spent <b>${evt.points}</b> pts at ${where}`;
+    const pts = Number(evt.points) || 0; // the bus accepts any JSON, so never trust event fields as HTML
+    if (evt.type === 'PointsEarned') return `<b>${who}</b> earned <b>${pts}</b> pts at ${where}`;
+    if (evt.type === 'PointsRedeemed') return `<b>${who}</b> spent <b>${pts}</b> pts at ${where}`;
     if (evt.type === 'MemberEnrolled') return `<b>${who}</b> joined PointBridge at ${where}`;
     return esc(evt.type);
   }

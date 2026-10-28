@@ -83,8 +83,9 @@ The diagrams are in `architecture.md`: the component diagram, three sequence dia
    - The monolith still completes the sale using its own database and flags it `loyaltyStatus = failed` ("points not applied").
    - Spending points is refused with HTTP 503 and a clear message, because points can't be verified.
 5. **Validate locally first.** Each monolith validates items, seats and phone before calling the service, so a bad order never touches the shared ledger.
-6. **Compensation.** If spending points fails after the Cinema has reserved seats, the seats are released and the booking removed. This is a small, local version of the **Saga** pattern.
-7. **Missed events.** Whenever an app reconnects to the bus, its page reloads the member from the service, so events missed while offline don't leave stale balances.
+6. **Compensation.** If spending points is refused after the Cinema has reserved seats, the seats are released and the booking removed. This is a small, local version of the **Saga** pattern. A *timeout* is different: the spend may already have happened. So the app first repeats the call with the same reference, which is safe because references make it idempotent, and rolls back only if it still can't get an answer.
+7. **References stay unique.** Each order's reference is `cafe-order-<id>-<random>`, so clearing one app's database can never make a new order look like a repeat of an old one. The service also refuses (409) a reference that was already used for a different member.
+8. **Missed events.** Whenever an app reconnects to the bus, its page reloads the member from the service, so events missed while offline don't leave stale balances.
 
 **Known limit.** If the earn call fails *after* the sale is saved, the customer misses those points. The order is flagged, and its reference makes a later retry safe. A retry worker is future work (§8).
 
@@ -92,14 +93,14 @@ The diagrams are in `architecture.md`: the component diagram, three sequence dia
 
 | Suite | Tests | What it proves |
 |---|---|---|
-| Loyalty Service: core | 14 | Enroll/lookup, the earn rate, spending, refusing an overdraft, the race between two apps, idempotent retries, every validation rule, API-key auth, tiers, the admin overview never leaking keys |
+| Loyalty Service: core | 15 | Enroll/lookup, the earn rate, spending, refusing an overdraft, the race between two apps, idempotent retries, refusing a reference reused for another member, every validation rule, API-key auth, tiers, the admin overview never leaking keys |
 | Loyalty Service: events | 4 | The right events with the source app and member snapshot; nothing published on replays or refusals; a dead bus doesn't fail writes |
 | Event Bus | 2 | Fan-out to several subscribers; rejects bad events |
 | `loyalty-client` | 4 | Round-trip against the **real** service; errors mapped to `LoyaltyError`; `findOrEnroll`; unreachable service |
-| Café monolith | 12 | Checkout with and without points, a whole bill paid in points, a refused spend saves nothing, validation happens before any service call, guest checkout, service down, earn failing after a spend |
-| Cinema monolith | 8 | Booking maths, seat inventory, oversell refused without touching points, seats released when a spend fails, validation, service down |
+| Café monolith | 16 | Checkout with and without points, a unique reference per order, a retried spend after a timeout, a whole bill paid in points, a refused spend saves nothing, validation happens before any service call, guest checkout, service down, earn failing after a spend |
+| Cinema monolith | 9 | Booking maths, a retried spend after a timeout, seat inventory, oversell refused without touching points, seats released when a spend fails, validation, service down |
 
-Run all 44 tests with `npm test` in `pointbridge/`. The full demo was also run in the browser with both monoliths and the service console open.
+Run all 50 tests with `npm test` in `pointbridge/`. The full demo was also run in the browser with both monoliths and the service console open.
 
 ## 7. SOA vs microservices, and REST vs SOAP
 

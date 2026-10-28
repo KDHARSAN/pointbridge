@@ -9,6 +9,17 @@ export class LoyaltyError extends Error {
   }
 }
 
+// A timeout can hide a change that did commit. Every call carries an idempotency reference,
+// so repeating it once is safe and settles whether it happened.
+export async function retryOnce(call) {
+  try {
+    return await call();
+  } catch (err) {
+    if (err instanceof LoyaltyError && err.status === 0) return call();
+    throw err;
+  }
+}
+
 export function createLoyaltyClient({ baseUrl, clientId, apiKey, timeoutMs = 3000 }) {
   async function call(method, path, body) {
     let res;

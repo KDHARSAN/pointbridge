@@ -11,9 +11,9 @@
 9. **Consistency.** No overspending (the race), idempotent retries, compensation, missed-event refresh. *Visual:* `npm run race` output.
 10. **Loose coupling.** The service goes down and the Café still sells. *Visual:* diagram 4 plus a "points not applied" badge screenshot.
 11. **LIVE DEMO.** Follow the README demo script, steps 1–6.
-12. **Results and future work.** 44 automated tests, syllabus mapping. Next: OAuth2, Kafka, a retry worker, more partners. *Visual:* diagram 5.
+12. **Results and future work.** 50 automated tests, syllabus mapping. Next: OAuth2, Kafka, a retry worker, more partners. *Visual:* diagram 5.
 
 **Demo tips**
-- Before presenting: stop everything, delete `*/*.db`, then `npm run dev`.
+- Before presenting: stop everything and delete `*/*.db`. Then run `npm run loyalty` in one terminal and `npm run dev:apps` in another, so in step 5 you can stop only the service with Ctrl+C.
 - Arrange the windows with the Café on the left, the Cinema on the right, and the service console (:5001) behind them.
 - Use the phone number `9876543210` and the name Priya so the steps match the script.

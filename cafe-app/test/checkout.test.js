@@ -68,14 +68,18 @@ test('checkout without points: order saved, earns on full total', async () => {
   assert.deepEqual([res.body.order.total, res.body.order.pointsUsed, res.body.order.paid, res.body.order.pointsEarned],
     [330, 0, 330, 33]);
   assert.equal(res.body.order.loyaltyStatus, 'ok');
-  assert.deepEqual(loyalty.calls.at(-1), ['earn', 330, `cafe-order-${res.body.order.id}`]);
+  const [op, amount, ref] = loyalty.calls.at(-1);
+  assert.deepEqual([op, amount], ['earn', 330]);
+  assert.match(ref, new RegExp(`^cafe-order-${res.body.order.id}-`));
 });
 
 test('checkout with points: spends min(balance,total), earns on what was paid', async () => {
   const { app, loyalty } = setup({ balance: 40 });
   const res = await request(app).post('/api/checkout').send(order({ usePoints: true }));
   assert.deepEqual([res.body.order.pointsUsed, res.body.order.paid, res.body.order.pointsEarned], [40, 290, 29]);
-  assert.deepEqual(loyalty.calls.filter((c) => c[0] === 'redeem'), [['redeem', 40, `cafe-order-${res.body.order.id}`]]);
+  const redeems = loyalty.calls.filter((c) => c[0] === 'redeem');
+  assert.deepEqual(redeems.map((c) => c[1]), [40]);
+  assert.match(redeems[0][2], new RegExp(`^cafe-order-${res.body.order.id}-`));
   assert.equal(res.body.member.balance, 29);
 });
 
@@ -148,4 +152,41 @@ test('GET /api/member/:phone maps loyalty errors to HTTP', async () => {
   assert.equal((await request(app).get('/api/member/1111111111')).status, 404);
   const down = setup({ down: true });
   assert.equal((await request(down.app).get(`/api/member/${PHONE}`)).status, 503);
+});
+
+test('null item -> 400, not a crash', async () => {
+  const { app } = setup();
+  assert.equal((await request(app).post('/api/checkout').send({ phone: PHONE, items: [null] })).status, 400);
+});
+
+test('references are unique per order, so a cleared cafe.db cannot replay old ones', async () => {
+  const { app, loyalty } = setup();
+  await request(app).post('/api/checkout').send(order());
+  const fresh = setup();
+  fresh.loyalty.calls.length = 0;
+  await request(fresh.app).post('/api/checkout').send(order());
+  const refs = [loyalty.calls.at(-1)[2], fresh.loyalty.calls.at(-1)[2]];
+  assert.notEqual(refs[0], refs[1]);
+});
+
+test('redeem timeout: retried once with the same reference, order kept with points used', async () => {
+  const { app, loyalty } = setup({ balance: 40 });
+  const realRedeem = loyalty.redeem;
+  const refs = [];
+  loyalty.redeem = async (phone, points, ref) => {
+    refs.push(ref);
+    if (refs.length === 1) throw new LoyaltyError(0, 'Loyalty service unavailable');
+    return realRedeem(phone, points, ref);
+  };
+  const res = await request(app).post('/api/checkout').send(order({ usePoints: true }));
+  assert.equal(res.status, 201);
+  assert.equal(res.body.order.pointsUsed, 40);
+  assert.equal(refs[0], refs[1]);
+});
+
+test('pointsUsed records what the service actually spent', async () => {
+  const { app, loyalty } = setup({ balance: 40 });
+  loyalty.redeem = async () => ({ member: { phone: PHONE, balance: 30 }, points: 10 });
+  const res = await request(app).post('/api/checkout').send(order({ usePoints: true }));
+  assert.deepEqual([res.body.order.pointsUsed, res.body.order.paid], [10, 320]);
 });
