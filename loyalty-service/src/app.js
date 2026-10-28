@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import { enroll, getMember, applyPoints, listTransactions } from './repo.js';
 
@@ -23,6 +24,11 @@ export function createApp({ db, clients, publish = () => {} }) {
     next();
   });
 
+  // Called only after the change is committed, so subscribers never see a change that didn't happen.
+  const emit = (type, req, member, points = 0) => publish({
+    id: randomUUID(), type, phone: member.phone, source: req.client, points, at: new Date().toISOString(), member,
+  });
+
   const findMember = (req, res) => {
     const member = getMember(db, req.params.phone);
     if (!member) res.status(404).json({ error: 'Member not found' });
@@ -34,6 +40,7 @@ export function createApp({ db, clients, publish = () => {} }) {
     if (!isPhone(phone)) return res.status(400).json({ error: 'phone must be 10 digits' });
     if (!isText(name)) return res.status(400).json({ error: 'name is required' });
     const { member, created } = enroll(db, { phone, name });
+    if (created) emit('MemberEnrolled', req, member);
     res.status(created ? 201 : 200).json(member);
   });
 
@@ -52,6 +59,7 @@ export function createApp({ db, clients, publish = () => {} }) {
     if (points === 0) return res.json({ member: getMember(db, req.params.phone), points: 0 });
     const result = applyPoints(db, { phone: req.params.phone, type, points, source: req.client, reference: req.body.reference });
     if (result.insufficient) return res.status(409).json({ error: 'Not enough points' });
+    if (!result.replayed) emit(type === 'earn' ? 'PointsEarned' : 'PointsRedeemed', req, result.member, result.points);
     res.json({ member: result.member, points: result.points });
   };
 
