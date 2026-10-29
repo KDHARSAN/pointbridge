@@ -178,7 +178,7 @@ sequenceDiagram
 **Prerequisite:** [Node.js](https://nodejs.org/) **22.13 or newer**, for the built-in `node:sqlite`.
 
 ```bash
-git clone <this-repo-url>
+git clone https://github.com/KDHARSAN/pointbridge.git
 cd pointbridge
 npm run setup      # installs dependencies for every component
 npm run dev        # starts the service, the bus and both monoliths
@@ -331,7 +331,7 @@ An API gateway with OAuth2 client credentials · PostgreSQL · a transactional o
 
 <div align="center">
 
-**Built by [DHARSAN K](https://github.com/)** for **21CSE457T: Service Oriented Architecture**
+**Built by [DHARSAN K](https://github.com/KDHARSAN)** for **21CSE457T: Service Oriented Architecture**
 
 ⭐ If this project helped you understand SOA, consider starring the repo.
 
